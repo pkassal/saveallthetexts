@@ -103,6 +103,8 @@ public class MessageList extends CordovaPlugin {
 			writer.write("  	.when { color: blue; margin-right: 20px; }\n");
 			writer.write("  	.from { color: maroon; margin-right: 20px; }\n");
 			writer.write("  	.text { color: black; }\n");
+			writer.write("  	.sms_id { display: none }\n");
+			writer.write("  	.mms_id { display: none}\n");
 			writer.write("    </style>\n");
 			writer.write("</head>\n");
 			writer.write("<body>\n");
@@ -171,7 +173,7 @@ public class MessageList extends CordovaPlugin {
 				sb.append("</span>");
 				sb.append("<span class=\"sms_id\">");
 				sb.append(id);
-				sb.append("</span");
+				sb.append("</span>");
 				sb.append("<span class=\"text\">");
 				sb.append(body);
 				sb.append("</span>");
@@ -228,12 +230,18 @@ public class MessageList extends CordovaPlugin {
 				String type = cursor.getString(cursor.getColumnIndex("ct"));			
 				if ("text/plain".equals(type)) {
 					sb.append(body);
+				} else if ("application/smil".equals(type)) {
+					// Skip
+				} else {
+					sb.append("/* ");
+					sb.append(type);
+					sb.append(" here */");
 				}
 			}
 			if (sb.length()>0) {
-				sb.append("<span class=\"mms_id\">");
-				sb.append(mid);
-				sb.append("</span");
+				writer.write("<span class=\"mms_id\">");
+				writer.write(Long.toString(mid));
+				writer.write("</span>");
 				writer.write("<span class=\"mytext\">");
 				writer.write(sb.toString());
 				writer.write("</span>");
