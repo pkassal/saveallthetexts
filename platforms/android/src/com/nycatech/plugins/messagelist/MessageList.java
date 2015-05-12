@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -27,8 +29,10 @@ public class MessageList extends CordovaPlugin {
     public static final String ACTION_ECHO = "echo";
     public static final String ACTION_LIST = "list";
     public static final String ACTION_SAVE = "save";
+	
 	final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
-    
+    static final String DIR_NAME = "SavedTexts";
+	
 	private static class Message implements Comparable<Message> {
 		long date;
 		String text;
@@ -98,7 +102,7 @@ public class MessageList extends CordovaPlugin {
 		if (!newFolder.exists()) {
 			newFolder.mkdir();
 		}
-		String filename = "SavedTexts/texts.html";
+		String filename = DIR_NAME+"/index.html";
 		File myFile = new File(Environment
             .getExternalStorageDirectory(), filename);
 		if (myFile.exists())
@@ -254,7 +258,7 @@ public class MessageList extends CordovaPlugin {
 
 	private void recordMmsParts(long mid, StringBuilder result) throws Exception {
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
-		final String[] projection = new String[]{"seq","ct","text"};
+		final String[] projection = new String[]{"_id","seq","ct","text"};
 		final String selection = String.format("mid=%d",mid);
 		final String order = "seq ASC";
 		Uri uri = Uri.parse("content://mms/part");
@@ -264,10 +268,15 @@ public class MessageList extends CordovaPlugin {
 			while (cursor.moveToNext()) {
 				String body = cursor.getString(cursor.getColumnIndex("text"));
 				String type = cursor.getString(cursor.getColumnIndex("ct"));			
+				long id = cursor.getLong(cursor.getColumnIndex("_id"));			
 				if ("text/plain".equals(type)) {
 					sb.append(body);
 				} else if ("application/smil".equals(type)) {
 					// Skip
+				} else if ("image/jpeg".equals(type) || "image/bmp".equals(type) ||
+                "image/gif".equals(type) || "image/jpg".equals(type) ||
+                "image/png".equals(type)) {
+					recordImage(id, type, sb);
 				} else {
 					sb.append("/* ");
 					sb.append(type);
@@ -287,6 +296,42 @@ public class MessageList extends CordovaPlugin {
 		}
 	}
 
+	private void recordImage(long id, String type, StringBuilder result) throws Exception {
+		String ext = "dat";
+		if ("image/jpeg".equals(type) || "image/jpg".equals(type)) { ext = "jpg"; }
+		if ("image/bmp".equals(type)) { ext = "bmp"; }
+		if ("image/gif".equals(type)) { ext = "gif"; }
+		if ("image/png".equals(type)) { ext = "png"; }
+		
+		String filename = String.format("%d.%s", id, ext);
+		result.append("<img src=\"");
+		result.append(filename);
+		result.append("\" width='20%'/>");
+		
+		File myFile = new File(Environment
+            .getExternalStorageDirectory(), DIR_NAME + "/" +filename);
+		if (myFile.exists())
+			myFile.delete();
+		FileOutputStream writer = new FileOutputStream(myFile);
+		
+		InputStream is = null;
+		byte[] buffer = new byte[1024];
+		try {
+			ContentResolver contentResolver = cordova.getActivity().getContentResolver();
+			 Uri partURI = Uri.parse("content://mms/part/" + id);
+			is = contentResolver.openInputStream(partURI);
+			int read;
+			while ((read = is.read(buffer)) != -1 ) {
+				writer.write(buffer, 0, read);
+			}
+		} finally {
+			writer.close();
+			if (is != null) {
+					is.close();
+			}
+		}
+	}
+	
 	private void recordMmsSender(long mid, StringBuilder result) throws Exception {
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
 		final String[] projection = new String[]{"address","type"};
