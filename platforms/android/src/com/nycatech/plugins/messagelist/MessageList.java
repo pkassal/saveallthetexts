@@ -9,6 +9,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -26,6 +29,17 @@ public class MessageList extends CordovaPlugin {
     public static final String ACTION_SAVE = "save";
 	final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
     
+	private static class Message implements Comparable<Message> {
+		long date;
+		String text;
+		
+		public int compareTo(Message o) {
+			if (date<o.date) return -1;
+			if (date>o.date) return 1;
+			return 0;
+		}
+	}
+	
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         try {
@@ -113,6 +127,7 @@ public class MessageList extends CordovaPlugin {
 			final String[] projection = new String[]{"*"};
 			Uri uri = Uri.parse("content://mms-sms/conversations?simple=true");
 			Cursor cursor = contentResolver.query(uri, projection, null, null, null);
+			List<Message> convMessages = new ArrayList<Message>();
 			try {
 				while (cursor.moveToNext()) {
 					writer.write("  <h1>");
@@ -130,9 +145,15 @@ public class MessageList extends CordovaPlugin {
 					}
 					writer.write(sb.toString());
 					writer.write("</h1>\n");
+			
+					convMessages.clear();
+					convMessages.addAll(recordSmsConversation(conversationId));
+					convMessages.addAll(recordMmsConversation(conversationId));
+					Collections.sort(convMessages);
+					for (Message m : convMessages) {
+						writer.write(m.text);
+					}
 					
-					recordSmsConversation(conversationId, writer);
-					recordMmsConversation(conversationId, writer);
 				}
 
 				writer.write("</body>\n");
@@ -146,13 +167,15 @@ public class MessageList extends CordovaPlugin {
 		}
 	}
 
-	private void recordSmsConversation(String convId, FileWriter writer) throws Exception {
+	private List<Message> recordSmsConversation(String convId) throws Exception {
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
 		final String[] projection = new String[]{"_id","address","body","type","date"};
 		final String selection = "thread_id="+convId;
 		final String order = "date ASC";
 		Uri uri = Uri.parse("content://sms");
 		Cursor cursor = contentResolver.query(uri, projection, selection, null, order);
+		List<Message> convMessages = new ArrayList<Message>();
+
 		try { 
 			while (cursor.moveToNext()) {
 				long id = cursor.getLong(cursor.getColumnIndex("_id"));
@@ -177,21 +200,28 @@ public class MessageList extends CordovaPlugin {
 				sb.append("<span class=\"text\">");
 				sb.append(body);
 				sb.append("</span>");
-				sb.append("</div>\n");			
-				writer.write(sb.toString());
+				sb.append("</div>\n");
+				Message m = new Message();
+				m.date = date;
+				m.text = sb.toString();
+				convMessages.add(m);
 			}
 		} finally {
 			cursor.close();
 		}
+		
+		return convMessages;
 	}
 
-	private void recordMmsConversation(String convId, FileWriter writer) throws Exception {
+	private List<Message> recordMmsConversation(String convId) throws Exception {
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
 		final String[] projection = new String[]{"_id","date"};
 		final String selection = "thread_id="+convId;
 		final String order = "date ASC";
 		Uri uri = Uri.parse("content://mms");
 		Cursor cursor = contentResolver.query(uri, projection, selection, null, order);
+		List<Message> convMessages = new ArrayList<Message>();
+
 		try {
 			while (cursor.moveToNext()) {
 				long m_id = cursor.getLong(cursor.getColumnIndex("_id"));
@@ -204,19 +234,25 @@ public class MessageList extends CordovaPlugin {
 				sb.append("<span class=\"when\">");
 				sb.append(dateString);
 				sb.append("</span>");
-				writer.write(sb.toString());
 
-				recordMmsSender(m_id, writer);
-				recordMmsParts(m_id, writer);
-				writer.write("</div>\n");
+				recordMmsSender(m_id, sb);
+				recordMmsParts(m_id, sb);
+				sb.append("</div>\n");
+
+				Message m = new Message();
+				m.date = date;
+				m.text = sb.toString();
+				convMessages.add(m);
 
 			}
 		} finally {
 			cursor.close();
 		}
+		
+		return convMessages;
 	}
 
-	private void recordMmsParts(long mid, FileWriter writer) throws Exception {
+	private void recordMmsParts(long mid, StringBuilder result) throws Exception {
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
 		final String[] projection = new String[]{"seq","ct","text"};
 		final String selection = String.format("mid=%d",mid);
@@ -239,19 +275,19 @@ public class MessageList extends CordovaPlugin {
 				}
 			}
 			if (sb.length()>0) {
-				writer.write("<span class=\"mms_id\">");
-				writer.write(Long.toString(mid));
-				writer.write("</span>");
-				writer.write("<span class=\"mytext\">");
-				writer.write(sb.toString());
-				writer.write("</span>");
+				result.append("<span class=\"mms_id\">");
+				result.append(Long.toString(mid));
+				result.append("</span>");
+				result.append("<span class=\"mytext\">");
+				result.append(sb);
+				result.append("</span>");
 			}
 		} finally {
 			cursor.close();
 		}
 	}
 
-	private void recordMmsSender(long mid, FileWriter writer) throws Exception {
+	private void recordMmsSender(long mid, StringBuilder result) throws Exception {
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
 		final String[] projection = new String[]{"address","type"};
 		Uri uri = Uri.parse(String.format("content://mms/%d/addr",mid));
@@ -269,9 +305,9 @@ public class MessageList extends CordovaPlugin {
 				}
 			}
 			if (sb.length()>0) {
-				writer.write("<span class=\"from\">");
-				writer.write(sb.toString());
-				writer.write("</span>");
+				result.append("<span class=\"from\">");
+				result.append(sb);
+				result.append("</span>");
 			}
 		} finally {
 			cursor.close();
