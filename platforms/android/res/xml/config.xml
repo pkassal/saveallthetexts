@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.nycatech.sat" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <preference name="loglevel" value="DEBUG" />
+    <feature name="MessageList">
+        <param name="android-package" value="com.nycatech.plugins.MessageList" />
+    </feature>
+    <name>SaveAllTheTexts</name>
+    <description>
+        A simple way to save all of your SMS or MMS text messages for offline viewing.
+    </description>
+    <author href="http://nycatech.net/">
+        Nycatech
+    </author>
+    <content src="index.html" />
+    <access origin="*" />
+</widget>
