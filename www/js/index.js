@@ -62,6 +62,6 @@ var app = {
 app.initialize();
 
 function saveAllMessages() {
-	alert("Working...");
+	alert("Ok, starting!  This may take a while...");
 	app.saveMessages();
 }
