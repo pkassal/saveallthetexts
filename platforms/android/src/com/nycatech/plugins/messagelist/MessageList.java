@@ -30,7 +30,7 @@ public class MessageList extends CordovaPlugin {
     public static final String ACTION_LIST = "list";
     public static final String ACTION_SAVE = "save";
 	
-	final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+	final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' hh:mm:ss a");
     static final String DIR_NAME = "SavedTexts";
 	private static final String STYLE_MY_TEXT = "mytext";
 	private static final String STYLE_THEIR_TEXT = "theirtext";
@@ -120,13 +120,15 @@ public class MessageList extends CordovaPlugin {
 			writer.write("  <meta charset=\"utf-8\">\n");
 			writer.write("  <title>Saved Texts</title>\n");	
 			writer.write("  <style>\n");
-			writer.write("  	body { color: #444; font-size: 1.125rem; font-family: \"Roboto\",\"Helvetica Neue\",Helvetica,Arial,sans-serif;   line-height: 1.5; }\n");
+			writer.write("  	body { background-color: #D1D1E0; font-size: 1.125rem; font-family: \"Roboto\",\"Helvetica Neue\",Helvetica,Arial,sans-serif;   line-height: 1.5;  }\n");
+			writer.write("  	.conversation { background-color: #fff; padding: 20px; margin: 40px  }\n");
 			writer.write("  	.when { color: blue; margin-right: 20px; }\n");
 			writer.write("  	.from { color: maroon; margin-right: 20px; }\n");
 			writer.write("  	.mytext { color: gray; }\n");
-			writer.write("  	.theirtext { color: black; }\n");
+			writer.write("  	.theirtext {  color: #444; }\n");
 			writer.write("  	.sms_id { display: none }\n");
 			writer.write("  	.mms_id { display: none}\n");
+			writer.write("      .picframe { background: #EBE0CC; padding: 10px;  margin-left: 10px; margin-right: 10px; display: inline; }\n");
 			writer.write("    </style>\n");
 			writer.write("</head>\n");
 			writer.write("<body>\n");
@@ -138,7 +140,7 @@ public class MessageList extends CordovaPlugin {
 			List<Message> convMessages = new ArrayList<Message>();
 			try {
 				while (cursor.moveToNext()) {
-					writer.write("  <h1>");
+					writer.write("  <div class=\"conversation\"><h1>");
 										
 					StringBuilder sb = new StringBuilder();
 					String conversationId = cursor.getString(cursor.getColumnIndex("_id"));
@@ -165,6 +167,7 @@ public class MessageList extends CordovaPlugin {
 					for (Message m : convMessages) {
 						writer.write(m.text);
 					}
+					writer.write("</div>\n");
 					
 				}
 
@@ -319,7 +322,7 @@ public class MessageList extends CordovaPlugin {
 		String filename = String.format("%d.%s", id, ext);
 		result.append("<a href=\"");
 		result.append(filename);
-		result.append("\"><img src=\"");
+		result.append("\"><img class='picframe' src=\"");
 		result.append(filename);
 		result.append("\" width='15%'/></a>");
 		
