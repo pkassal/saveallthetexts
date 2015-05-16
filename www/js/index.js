@@ -47,6 +47,7 @@ var app = {
         console.log('Received Event: ' + id);
     }, 
 	saveMessages: function() {
+	alert("Ok, starting!  This may take a while...");
 		var success = function(message) { alert("Success! "+message); };
 		var error = function(message) { alert("Failed: " + message); };
 		 cordova.exec(
@@ -61,7 +62,3 @@ var app = {
 
 app.initialize();
 
-function saveAllMessages() {
-	alert("Ok, starting!  This may take a while...");
-	app.saveMessages();
-}

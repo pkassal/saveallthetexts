@@ -30,8 +30,10 @@ public class MessageList extends CordovaPlugin {
     public static final String ACTION_LIST = "list";
     public static final String ACTION_SAVE = "save";
 	
-	final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+	final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
     static final String DIR_NAME = "SavedTexts";
+	private static final String STYLE_MY_TEXT = "mytext";
+	private static final String STYLE_THEIR_TEXT = "theirtext";
 	
 	private static class Message implements Comparable<Message> {
 		long date;
@@ -118,9 +120,11 @@ public class MessageList extends CordovaPlugin {
 			writer.write("  <meta charset=\"utf-8\">\n");
 			writer.write("  <title>Saved Texts</title>\n");	
 			writer.write("  <style>\n");
+			writer.write("  	body { color: #444; font-size: 1.125rem; font-family: \"Roboto\",\"Helvetica Neue\",Helvetica,Arial,sans-serif;   line-height: 1.5; }\n");
 			writer.write("  	.when { color: blue; margin-right: 20px; }\n");
 			writer.write("  	.from { color: maroon; margin-right: 20px; }\n");
-			writer.write("  	.text { color: black; }\n");
+			writer.write("  	.mytext { color: gray; }\n");
+			writer.write("  	.theirtext { color: black; }\n");
 			writer.write("  	.sms_id { display: none }\n");
 			writer.write("  	.mms_id { display: none}\n");
 			writer.write("    </style>\n");
@@ -135,18 +139,22 @@ public class MessageList extends CordovaPlugin {
 			try {
 				while (cursor.moveToNext()) {
 					writer.write("  <h1>");
+										
+					StringBuilder sb = new StringBuilder();
+					String conversationId = cursor.getString(cursor.getColumnIndex("_id"));
+					sb.append("Converation ");
+					sb.append(conversationId);
+					sb.append(":");
+					/*
+					Need a way to convert these to names:
 					
 					String recip = cursor.getString(cursor.getColumnIndex("display_recipient_ids"));
 					String[] ids = recip.split(" ");
-					
-					StringBuilder sb = new StringBuilder();
-					String conversationId = cursor.getString(cursor.getColumnIndex("_id"));
-					sb.append(conversationId);
-					sb.append(":");
 					for (String s : ids)  {
 						sb.append(" ");
 						sb.append(whoIs(s, idToWho));
 					}
+					*/
 					writer.write(sb.toString());
 					writer.write("</h1>\n");
 			
@@ -201,7 +209,10 @@ public class MessageList extends CordovaPlugin {
 				sb.append("<span class=\"sms_id\">");
 				sb.append(id);
 				sb.append("</span>");
-				sb.append("<span class=\"text\">");
+				sb.append("<span class=\"");
+				if (fromMe) sb.append(STYLE_MY_TEXT);
+				else  sb.append(STYLE_THEIR_TEXT);
+				sb.append("\">");
 				sb.append(body);
 				sb.append("</span>");
 				sb.append("</div>\n");
@@ -239,8 +250,8 @@ public class MessageList extends CordovaPlugin {
 				sb.append(dateString);
 				sb.append("</span>");
 
-				recordMmsSender(m_id, sb);
-				recordMmsParts(m_id, sb);
+				boolean fromMe = recordMmsSender(m_id, sb);
+				recordMmsParts(m_id, fromMe, sb);
 				sb.append("</div>\n");
 
 				Message m = new Message();
@@ -256,7 +267,7 @@ public class MessageList extends CordovaPlugin {
 		return convMessages;
 	}
 
-	private void recordMmsParts(long mid, StringBuilder result) throws Exception {
+	private void recordMmsParts(long mid, boolean fromMe, StringBuilder result) throws Exception {
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
 		final String[] projection = new String[]{"_id","seq","ct","text"};
 		final String selection = String.format("mid=%d",mid);
@@ -287,7 +298,9 @@ public class MessageList extends CordovaPlugin {
 				result.append("<span class=\"mms_id\">");
 				result.append(Long.toString(mid));
 				result.append("</span>");
-				result.append("<span class=\"mytext\">");
+				result.append("<span class=\"");
+				result.append(fromMe ? STYLE_MY_TEXT : STYLE_THEIR_TEXT);
+				result.append("\">");
 				result.append(sb);
 				result.append("</span>");
 			}
@@ -304,9 +317,11 @@ public class MessageList extends CordovaPlugin {
 		if ("image/png".equals(type)) { ext = "png"; }
 		
 		String filename = String.format("%d.%s", id, ext);
-		result.append("<img src=\"");
+		result.append("<a href=\"");
 		result.append(filename);
-		result.append("\" width='20%'/>");
+		result.append("\"><img src=\"");
+		result.append(filename);
+		result.append("\" width='15%'/></a>");
 		
 		File myFile = new File(Environment
             .getExternalStorageDirectory(), DIR_NAME + "/" +filename);
@@ -332,7 +347,8 @@ public class MessageList extends CordovaPlugin {
 		}
 	}
 	
-	private void recordMmsSender(long mid, StringBuilder result) throws Exception {
+	private boolean recordMmsSender(long mid, StringBuilder result) throws Exception {
+		boolean fromMe = false;
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
 		final String[] projection = new String[]{"address","type"};
 		Uri uri = Uri.parse(String.format("content://mms/%d/addr",mid));
@@ -343,9 +359,10 @@ public class MessageList extends CordovaPlugin {
 				String address = cursor.getString(cursor.getColumnIndex("address"));
 				int type = cursor.getInt(cursor.getColumnIndex("type"));			
 				if (type==137) {
-					if ("insert-address-token".equals(address)) 
+					if ("insert-address-token".equals(address)) {
 						sb.append("me");
-					else
+						fromMe = true;
+					} else
 						sb.append(address);
 				}
 			}
@@ -357,6 +374,7 @@ public class MessageList extends CordovaPlugin {
 		} finally {
 			cursor.close();
 		}
+		return fromMe;
 	}
 
 	
