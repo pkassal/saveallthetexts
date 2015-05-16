@@ -147,16 +147,14 @@ public class MessageList extends CordovaPlugin {
 					sb.append("Converation ");
 					sb.append(conversationId);
 					sb.append(":");
-					/*
-					Need a way to convert these to names:
-					
+										
 					String recip = cursor.getString(cursor.getColumnIndex("display_recipient_ids"));
 					String[] ids = recip.split(" ");
 					for (String s : ids)  {
 						sb.append(" ");
 						sb.append(whoIs(s, idToWho));
 					}
-					*/
+					
 					writer.write(sb.toString());
 					writer.write("</h1>\n");
 			
@@ -382,22 +380,26 @@ public class MessageList extends CordovaPlugin {
 
 	
 	private String whoIs(String id, Map<String,String> cache) {
-		return id; 
-		/*
 		if (cache.containsKey(id)) return cache.get(id);
+
+		String result = "" ;
+		if (id.trim().isEmpty()) return result;
 		
 		ContentResolver contentResolver = cordova.getActivity().getContentResolver();
-		Cursor cursor = contentResolver.query(Uri.parse("content://mms-sms/canonical-address/"), null, "_id = "+id, null, null);
-		
-		String result = "?";
-		
-		if (cursor.moveToNext()){
-			result = cursor.getString(0);
-			cache.put(id,result);
+		final String[] projection = new String[]{"address"};
+		final String selection = String.format("_id=%s",id);
+		Uri uri = Uri.parse("content://mms-sms/canonical-addresses");
+		Cursor cursor = contentResolver.query(uri, projection, selection, null, null);
+		try {
+			StringBuilder sb = new StringBuilder();
+			if (cursor.moveToNext()) {
+				result = cursor.getString(cursor.getColumnIndex("address"));
+				cache.put(id, result);
+			}
+		} finally {
+			cursor.close();
 		}
-
-		cursor.close();
-		return result;
-		*/
+		
+		return result;	
 	}
 }
