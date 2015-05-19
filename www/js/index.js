@@ -46,10 +46,25 @@ var app = {
 
         console.log('Received Event: ' + id);
     }, 
+	saveMessagesX: function() {
+		var el = document.getElementById('status');
+		el.innerHTML = "<p>Ok, starting!</p>";
+		alert("Done!");
+	},
 	saveMessages: function() {
-	alert("Ok, starting!  This may take a while...");
-		var success = function(message) { alert("Success! "+message); };
+		var el = document.getElementById('status');
+		el.innerHTML = "<p>Working...</p>";
+		el.className = "blink";
+		alert("Ok, starting!  This may take a while...");
+		
+		var success = function(message) { 
+			//alert("Done! Plug in your USB cable and copy the SavedTexts directory to your computer."); 
+			el.innerHTML = "<p><b>Done!</b> Plug in your USB cable and copy the SavedTexts directory to your computer.</p>";
+			el.className = "status";
+			};
+			
 		var error = function(message) { alert("Failed: " + message); };
+		
 		 cordova.exec(
             success, // success callback function
             error, // error callback function

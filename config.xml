@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <widget id="com.nycatech.sat" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>SaveAllTheTexts</name>
+    <name>Save All The Texts</name>
     <description>
         A simple way to save all of your SMS or MMS text messages for offline viewing.
     </description>
