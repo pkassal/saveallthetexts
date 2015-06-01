@@ -4,7 +4,7 @@
     <feature name="MessageList">
         <param name="android-package" value="com.nycatech.plugins.MessageList" />
     </feature>
-    <name>SaveAllTheTexts</name>
+    <name>Save All The Texts</name>
     <description>
         A simple way to save all of your SMS or MMS text messages for offline viewing.
     </description>
