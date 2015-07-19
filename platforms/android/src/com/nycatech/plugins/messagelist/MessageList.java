@@ -144,7 +144,7 @@ public class MessageList extends CordovaPlugin {
 										
 					StringBuilder sb = new StringBuilder();
 					String conversationId = cursor.getString(cursor.getColumnIndex("_id"));
-					sb.append("Converation ");
+					sb.append("Conversation ");
 					sb.append(conversationId);
 					sb.append(":");
 										
